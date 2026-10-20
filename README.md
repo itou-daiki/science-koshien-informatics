@@ -6,6 +6,8 @@
 
 https://itou-daiki.github.io/science-koshien-informatics/
 
+- トップページから総合編・テーマ別・年度別の教材を開けます。
+- [総合編](https://itou-daiki.github.io/science-koshien-informatics/overview.html)
 - 問題図、スタックと再帰の段階図、学習計画を掲載しています。
 - 「AICodeで試す」から、コードを入力した状態の実行環境へ移動します。
 - 下部のボタン・選択欄、または左右キーでスライドを移動できます。
@@ -32,4 +34,4 @@ https://itou-daiki.github.io/science-koshien-informatics/
 
 ## 更新
 
-`index.html` または `years/` 内のHTMLを更新して `main` ブランチへ反映すると、GitHub Pagesに公開されます。
+`index.html`（トップ）、`assets/`、`overview.html`（総合編）、`years/` 内のHTMLを更新して `main` ブランチへ反映すると、GitHub Pagesに公開されます。
