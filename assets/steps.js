@@ -71,10 +71,35 @@
     for(let n=1;n<s.path.length;n++){const a=point(s.path[n-1]),b=point(s.path[n]);lines+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" class="ring-travel"/>`;}
     return `<svg viewBox="0 0 240 190" role="img" aria-label="駅${s.path.at(-1)}にいます。経路${s.path.join('から')}">${lines}${Array.from({length:6},(_,n)=>{const [x,y]=point(n);return `<circle cx="${x}" cy="${y}" r="14" class="${n===s.path.at(-1)?'ring-now':'ring-station'}"/><text x="${x}" y="${y+5}" text-anchor="middle">${n}</text>`}).join('')}</svg>`;
   }
+
+  const power=[];let slow=2,fast=2;
+  power.push({command:'開始：2の8乗',note:'2を8個掛けた値を求めます。最初の2を用意する操作は掛け算に数えません。',slow,fast,slowCount:0,fastCount:0,slowExpr:'2を用意',fastExpr:'2を用意',fastHistory:[]});
+  const fastHistory=[];
+  for(let i=1;i<=7;i++){
+    const previous=slow;slow*=2;let fastExpr='終了済み：もう掛け算しない';
+    if(i<=3){const before=fast;fast*=fast;fastExpr=`${before} × ${before} = ${fast}`;fastHistory.push(fastExpr);}
+    power.push({command:`掛け算を進める（${i}回目）`,note:i<=3?`順に掛ける側は2を1個追加。再利用する側は${i===1?'2×2':i===2?'前の結果4を2回使って4×4':'前の結果16を2回使って16×16'}。${i===3?'再利用する側は3回で256に到達！':'同じ部分を計算し直しません。'}`:'再利用する側は既に256で終了。順に掛ける側だけ、残りの2を掛けます。',slow,fast,slowCount:i,fastCount:Math.min(i,3),slowExpr:`${previous} × 2 = ${slow}`,fastExpr,fastHistory:[...fastHistory]});
+  }
+  power.push({...power.at(-1),command:'同じ答え、違う計算回数',note:'順に掛けると7回。結果を2乗して再利用すると3回。指数が1→2→4→8と倍になるので、少ない掛け算で同じ256に届きます。'});
+  const copy=[];let folders={X:['aaa','aaa-c'],Y:['aaa','aaa-2','aaa-4']};
+  const copySnap=(command,note,candidate='',target='Y',result='確認前')=>copy.push({command,note,candidate,target,result,folders:{X:[...folders.X],Y:[...folders.Y]}});
+  copySnap('開始：XのaaaをYへコピー','この問題の規則でコピーします。別のフォルダなら元の名前aaaが最初の候補。コピー元は残します。');
+  copySnap('候補を作る','コピー先Yに、同じ名前aaaがあるかを調べます。','aaa');
+  copySnap('同じ名前を発見','Yにはaaaがあります。上書きせず、候補の末尾に-2を付けて調べます。','aaa','Y','衝突：既にある');
+  copySnap('次の候補を作る','候補はaaa-2。番号は2から順に調べます。','aaa-2');
+  copySnap('また同じ名前を発見','aaa-2もあります。次はaaa-3を調べます。','aaa-2','Y','衝突：既にある');
+  copySnap('次の候補を作る','候補はaaa-3。最大番号4の次へ飛ぶのではなく、小さい番号から空きを探します。','aaa-3');
+  copySnap('空いている名前を発見','Yにaaa-3はありません。この名前なら既存のファイルを消さずに追加できます。','aaa-3','Y','採用：空いている');
+  folders.Y.push('aaa-3');copySnap('コピーを追加','Yにaaa-3を追加しました。Xのaaaと、Yに元からあったファイルは残っています。','aaa-3','Y','追加済み');
+  copySnap('次は同じX内へコピー','同じフォルダ内なら元の名前に-cを付ける規則。最初の候補はaaa-cです。','aaa-c','X');
+  copySnap('同じ名前を発見','Xにはaaa-cがあります。名前全体に-2を付け、aaa-c-2を調べます。','aaa-c','X','衝突：既にある');
+  copySnap('次の候補を作る','候補はaaa-c-2。aaa-cという名前全体を残して番号を付けます。','aaa-c-2','X');
+  copySnap('空いている名前を発見','Xにaaa-c-2はありません。この名前を採用します。','aaa-c-2','X','採用：空いている');
+  folders.X.push('aaa-c-2');copySnap('同じフォルダ内にも追加','Xにaaa-c-2を追加しました。候補を作る→存在を調べる→空きなら追加、の順です。','aaa-c-2','X','追加済み');
   const cellRow=(items,focus)=>'<div class="trace-cells">'+items.map((v,i)=>`<div class="${i===focus?'trace-focus':''}">${v}</div>`).join('')+'</div>';
   document.querySelectorAll('[data-step-demo]').forEach(host=>{
-    const type=host.dataset.stepDemo,states=({stack,recursion,sort,jobs,decimal,ring})[type];let index=0;
-    host.classList.add('step-demo');host.setAttribute('role','group');host.setAttribute('aria-label',({stack:'スタック',recursion:'再帰',sort:'並べ替え',jobs:'仕事の割り当て',decimal:'循環小数',ring:'環状線'})[type]+'を1手ずつ追う');
+    const type=host.dataset.stepDemo,states=({stack,recursion,sort,jobs,decimal,ring,power,copy})[type];let index=0;
+    host.classList.add('step-demo');host.setAttribute('role','group');host.setAttribute('aria-label',({stack:'スタック',recursion:'再帰',sort:'並べ替え',jobs:'仕事の割り当て',decimal:'循環小数',ring:'環状線',power:'累乗',copy:'ファイルのコピー'})[type]+'を1手ずつ追う');
     host.innerHTML='<div class="step-stage"></div><div class="step-status" aria-live="polite" aria-atomic="true"></div><div class="step-controls"><button type="button" data-action="back">戻る</button><button type="button" data-action="next">次の1手 →</button><button type="button" data-action="reset">最初から</button><span class="step-count"></span></div>';
     function render(){
       const s=states[index];let diagram='';
@@ -88,6 +113,10 @@
         diagram=`<div class="decimal-work"><b>1 ÷ 6 の筆算</b><div class="decimal-answer">0.${s.repeat?'1<span>6</span>66…':s.digits||'□'}</div><div class="decimal-remainder">いまの余り：<b>${s.remainder}</b></div><p>${s.working||'余り → 10倍 → 6で割る'}</p></div><div class="decimal-record"><b>余り → 初めて出た位置</b>${s.record.length?s.record.map(([r,p])=>`<div class="${s.repeat&&r===4?'trace-focus':''}">余り${r} → 小数第${p}位の前</div>`).join(''):'<p>まだ記録なし</p>'}<small>${s.repeat?'黄色の6から循環。余り4が再登場。':'余りを10倍する前に記録'}</small><p><b>注目：${s.focus}</b></p></div>`;
       }else if(type==='ring'){
         diagram=`<div class="ring-visual">${ringDiagram(s)}</div><div class="ring-info"><b>6駅の例：駅5 → 駅1 ／ 1区間2分</b><p>黄色＝今いる駅、青線＝通った道</p><div>${s.direction}：${s.path.join(' → ')}</div><strong>${s.path.length-1}区間 × 2分 ＝ ${(s.path.length-1)*2}分</strong><p>${s.done?'比較：順方向4分 ＜ 逆方向8分':s.direction==='逆方向'?'順方向は4分でした。逆方向を確認中。':'5の次は0、0の次は1です。'}</p></div>`;
+      }else if(type==='power'){
+        diagram=`<div class="power-method"><b>2を1個ずつ掛ける</b><div class="power-count">掛け算 ${s.slowCount}回</div><div class="power-value">${s.slow}</div><p>${s.slowExpr}</p><small>指数：1 → 2 → 3 → … → 8</small></div><div class="power-method"><b>前の結果を2乗して再利用</b><div class="power-count">掛け算 ${s.fastCount}回</div><div class="power-value">${s.fast}</div><p>${s.fastExpr}</p><small>${s.fastHistory.join(' → ')||'指数：1 → 2 → 4 → 8'}</small></div>`;
+      }else if(type==='copy'){
+        diagram=`<div class="copy-folders">${['X','Y'].map(name=>`<div><b>フォルダ${name}${name===s.target?' ← コピー先':''}</b><div class="copy-files">${s.folders[name].map(file=>`<span class="${name===s.target&&file===s.candidate?'trace-focus':''}">${file}</span>`).join('')}</div></div>`).join('')}</div><div class="copy-candidate"><b>コピー元は常にXのaaa</b><p>いま調べる候補</p><strong>${s.candidate||'まだ作っていません'}</strong><p>${s.result}</p><small>この問題独自の命名規則<br>同じ場所：末尾に-c<br>別の場所：元の名前から</small></div>`;
       }else{
         diagram=`<div class="step-towers">${Object.entries(s.pegs).map(([peg,disks])=>`<div><div class="step-peg">${[...disks].reverse().map(d=>`<b style="width:${d===1?50:85}%" class="${s.move?.disk===d&&s.move.to===peg?'step-changed':''}">${d}</b>`).join('')}</div><b>${peg}</b></div>`).join('')}<span>円盤：1が小、2が大${s.move?` ／ 今の移動：${s.move.from} → ${s.move.to}`:''}</span></div><div class="step-frames"><b>呼び出した仕事（再帰）</b>${s.frames.length?s.frames.map(f=>`<div class="${f.status==='実行中'?'step-current':''}">${f.label}<small>${f.status}</small></div>`).join(''):`<p>${index===0?'まだ仕事を呼び出していません':'すべての仕事が終了しました'}</p>`}</div>`;
       }
