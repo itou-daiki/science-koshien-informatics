@@ -13,6 +13,12 @@ https://itou-daiki.github.io/science-koshien-informatics/
 - 下部のボタン・選択欄、または左右キーでスライドを移動できます。
 - AICodeとWebフォントの利用にはインターネット接続が必要です。
 
+## 基礎知識
+
+[用語と考え方の基礎](https://itou-daiki.github.io/science-koshien-informatics/basics.html)
+
+変数・条件分岐・配列・スタックとDUP・関数・再帰・余り・最小性の8項目。図、確認問題、答えの理由、過去問へのリンクを掲載。全スライド下部からも開けます。
+
 ## 年度別解説
 
 [年度別の一覧](https://itou-daiki.github.io/science-koshien-informatics/years/)
